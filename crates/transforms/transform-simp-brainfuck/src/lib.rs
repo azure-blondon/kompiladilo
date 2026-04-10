@@ -226,7 +226,9 @@ impl SimpToBrainfuck {
                 loop_body.push(bf::decr());
                 loop_body.extend(self.move_from_to(temp_cell, self.center));
 
-                new_instrs.push(bf::r#loop(loop_body));
+                new_instrs.push(bf::loop_start());
+                new_instrs.extend(loop_body);
+                new_instrs.push(bf::loop_end());
 
                 self.pop_temp();
                 self.pop_temp();
@@ -279,7 +281,9 @@ impl SimpToBrainfuck {
         body.extend(self.move_from_to(temp, from)); // move back to from
         body.push(bf::decr()); // decrement from
 
-        instrs.push(bf::r#loop( body));
+        instrs.push(bf::loop_start());
+        instrs.extend(body);
+        instrs.push(bf::loop_end());
         instrs.extend(self.move_from_to(from, temp));
 
         let mut body = vec![];
@@ -288,8 +292,9 @@ impl SimpToBrainfuck {
         body.extend(self.move_from_to(from, temp));
         body.push(bf::decr()); // decrement temp
         
-        instrs.push(bf::r#loop(body));
-        
+        instrs.push(bf::loop_start());
+        instrs.extend(body);
+        instrs.push(bf::loop_end());
         instrs.extend(self.move_from_to(temp, self.center));
         
 
@@ -335,7 +340,9 @@ impl SimpToBrainfuck {
         body.push(bf::decr()); // decrement temp (which holds the result)
         body.extend(self.move_from_to(target_cell, first_cell)); // move back to first_cell
         body.push(bf::decr()); // decrement first_cell
-        instrs.push(bf::r#loop(body));
+        instrs.push(bf::loop_start());
+        instrs.extend(body);
+        instrs.push(bf::loop_end());
 
         instrs.extend(self.move_from_to(first_cell, self.center));
         instrs
@@ -345,10 +352,11 @@ impl SimpToBrainfuck {
     fn clear_cell(&self, cell: i32) -> Vec<Instruction> {
         let mut instrs = Vec::new();
         instrs.extend(self.move_from_to(self.center, cell));
-        let body = vec![
-            bf::decr(),
-        ];
-        instrs.push(bf::r#loop(body));
+
+        instrs.push(bf::loop_start());
+        instrs.push(bf::decr());
+        instrs.push(bf::loop_end());
+        
         instrs.extend(self.move_from_to(cell, self.center));
         instrs
     }

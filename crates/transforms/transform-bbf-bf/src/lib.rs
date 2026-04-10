@@ -1,6 +1,6 @@
 use ir_core::{Instruction, Module, Operand, Transformation};
 use language_better_brainfuck::{self as bbf, BetterBrainfuckValue};
-use language_brainfuck as bf;
+use language_brainfuck::{self as bf, loop_start};
 
 
 pub struct BBFToBF;
@@ -69,8 +69,9 @@ impl BBFToBF {
                                 self.transform_instruction(&instr, &mut body_instrs);
                             }
                         });
-                
-                instrs.push(bf::r#loop(body_instrs));
+                instrs.push(loop_start());
+                instrs.extend(body_instrs);
+                instrs.push(bf::loop_end());
             },
             _ => panic!("error: unknown opcode {}", instr.opcode),
         }

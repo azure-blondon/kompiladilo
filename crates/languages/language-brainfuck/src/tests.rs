@@ -2,7 +2,7 @@ use ir_core::{Language, Module, Emitter};
 use ir_core::errors::ParseError;
 
 use crate::BrainfuckLanguage;
-use crate::{ptr_left, ptr_right, incr, decr, output, r#loop};
+use crate::{ptr_left, ptr_right, incr, decr, output, loop_start, loop_end};
 use crate::emitter::BrainfuckEmitter;
 use crate::parser::parse;
 
@@ -10,13 +10,11 @@ use crate::parser::parse;
 fn emit_simple() {
     // +++[>++<-]>.
     // cell0 = 3, loop: cell1 += 2, cell0 -= 1, then output cell1 (= 6)
-    let loop_body = vec![
-        ptr_right(), incr(), incr(),
-        ptr_left(), decr(),
-    ];
     let instrs = vec![
         incr(), incr(), incr(),
-        r#loop(loop_body),
+        loop_start(), 
+        ptr_right(), incr(), incr(), ptr_left(), decr(),
+        loop_end(),
         ptr_right(), output(),
     ];
     assert_eq!(BrainfuckEmitter.emit(&Module { language: Box::from(BrainfuckLanguage), instructions: instrs }), Ok("+++[>++<-]>.".into()));
@@ -25,7 +23,7 @@ fn emit_simple() {
 #[test]
 fn verify_valid() {
     let lang = BrainfuckLanguage;
-    let instr = r#loop(vec![incr(), decr()]);
+    let instr = ptr_right();
     assert!(lang.verify(&instr).is_ok());
 }
 

@@ -9,7 +9,7 @@
 
 
 
-use ir_core::{Language, Instruction, InstructionDefinition, Operand};
+use ir_core::{Language, Instruction, InstructionDefinition};
 
 #[cfg(test)]
 pub mod tests;
@@ -20,13 +20,14 @@ pub mod parser;
 // # Opcodes
 
 pub mod op {
-    pub const PTR_RIGHT : &str = "bf.right";
-    pub const PTR_LEFT  : &str = "bf.left";
-    pub const INCR      : &str = "bf.incr";
-    pub const DECR      : &str = "bf.decr";
-    pub const OUTPUT    : &str = "bf.output";
-    pub const INPUT     : &str = "bf.input";
-    pub const LOOP      : &str = "bf.loop"; // variadic: child instructions
+    pub const PTR_RIGHT  : &str = "bf.right";
+    pub const PTR_LEFT   : &str = "bf.left";
+    pub const INCR       : &str = "bf.incr";
+    pub const DECR       : &str = "bf.decr";
+    pub const OUTPUT     : &str = "bf.output";
+    pub const INPUT      : &str = "bf.input";
+    pub const LOOP_START : &str = "bf.loop.start";
+    pub const LOOP_END   : &str = "bf.loop.end";
 }
 
 
@@ -39,31 +40,27 @@ impl Language for BrainfuckLanguage {
 
     fn instruction_defs(&self) -> &[InstructionDefinition] {
         &[
-            InstructionDefinition { opcode: op::PTR_RIGHT, operands: Some(&[]) },
-            InstructionDefinition { opcode: op::PTR_LEFT,  operands: Some(&[]) },
-            InstructionDefinition { opcode: op::INCR,      operands: Some(&[]) },
-            InstructionDefinition { opcode: op::DECR,      operands: Some(&[]) },
-            InstructionDefinition { opcode: op::OUTPUT,    operands: Some(&[]) },
-            InstructionDefinition { opcode: op::INPUT,     operands: Some(&[]) },
-            InstructionDefinition {
-                opcode: op::LOOP,
-                operands: None, // variable number of instructions
-            },
+            InstructionDefinition { opcode: op::PTR_RIGHT,  operands: Some(&[]) },
+            InstructionDefinition { opcode: op::PTR_LEFT,   operands: Some(&[]) },
+            InstructionDefinition { opcode: op::INCR,       operands: Some(&[]) },
+            InstructionDefinition { opcode: op::DECR,       operands: Some(&[]) },
+            InstructionDefinition { opcode: op::OUTPUT,     operands: Some(&[]) },
+            InstructionDefinition { opcode: op::INPUT,      operands: Some(&[]) },
+            InstructionDefinition { opcode: op::LOOP_START, operands: Some(&[]) },
+            InstructionDefinition { opcode: op::LOOP_END,   operands: Some(&[]) },
         ]
+
     }
 }
 
 
 // # Constructors
 
-pub fn ptr_right() -> Instruction { Instruction::leaf(op::PTR_RIGHT) }
-pub fn ptr_left()  -> Instruction { Instruction::leaf(op::PTR_LEFT)  }
-pub fn incr()      -> Instruction { Instruction::leaf(op::INCR)      }
-pub fn decr()      -> Instruction { Instruction::leaf(op::DECR)      }
-pub fn output()    -> Instruction { Instruction::leaf(op::OUTPUT)    }
-pub fn input()     -> Instruction { Instruction::leaf(op::INPUT)     }
-
-
-pub fn r#loop(instructions: Vec<Instruction>) -> Instruction {
-    Instruction::new(op::LOOP, instructions.into_iter().map(|i| Operand::Instruction(Box::new(i))).collect())
-}
+pub fn ptr_right() -> Instruction { Instruction::leaf(op::PTR_RIGHT)   }
+pub fn ptr_left()  -> Instruction { Instruction::leaf(op::PTR_LEFT)    }
+pub fn incr()      -> Instruction { Instruction::leaf(op::INCR)        }
+pub fn decr()      -> Instruction { Instruction::leaf(op::DECR)        }
+pub fn output()    -> Instruction { Instruction::leaf(op::OUTPUT)      }
+pub fn input()     -> Instruction { Instruction::leaf(op::INPUT)       }
+pub fn loop_start() -> Instruction { Instruction::leaf(op::LOOP_START) }
+pub fn loop_end()   -> Instruction { Instruction::leaf(op::LOOP_END)   }

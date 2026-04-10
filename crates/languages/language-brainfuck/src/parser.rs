@@ -13,7 +13,6 @@ impl Parser for BrainfuckParser {
 }
 
 pub fn parse(source: &str) -> Result<Module, CompileError> {
-    let lang = BrainfuckLanguage;
     let mut module = Module::new(BrainfuckLanguage);
     let mut stack: Vec<(usize, Vec<Instruction>)> = vec![(0, Vec::new())];
     let mut length = 0;
@@ -27,18 +26,8 @@ pub fn parse(source: &str) -> Result<Module, CompileError> {
             '.' => top(&mut stack).push(output()),
             ',' => top(&mut stack).push(input()),
 
-            '[' => stack.push((pos, Vec::new())),
-
-            ']' => {
-                let (_, children) = stack.pop()
-                    .filter(|_| stack.len() >= 1)
-                    .ok_or(ParseError::UnexpectedToken { token: "]".to_string(), position: pos })?;
-
-                let loop_instr = r#loop(children);
-                lang.verify(&loop_instr)?;
-                top(&mut stack).push(loop_instr);
-            }
-
+            '[' => top(&mut stack).push(loop_start()),
+            ']' => top(&mut stack).push(loop_end()),
             _ => {}
         }
         length = pos + 1;
