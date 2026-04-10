@@ -1,4 +1,4 @@
-use ir_core::{Instruction, Module, Transformation};
+use ir_core::{Instruction, Module, Transformation, errors::{CompileError, VerifyError}};
 use language_brainfuck as bf;
 use language_simp as simp;
 
@@ -23,18 +23,18 @@ impl Transformation for SimpToBrainfuck {
         "simp-brainfuck"
     }
 
-    fn run(&mut self, module: Module) -> Module {
+    fn run(&mut self, module: Module) -> Result<Module, CompileError> {
         let mut new_module = Module::new(bf::BrainfuckLanguage);
         let num_vars = self.find_number_of_different_variables(&module);
         self.set_center(num_vars);
         new_module.instructions.extend(self.move_x_units(self.center));
         for instr in module.instructions {
-            let new_instrs = self.simp_to_brainfuck(&instr, 0);
+            let new_instrs = self.simp_to_brainfuck(&instr, 0)?;
             for new_instr in new_instrs {
                 new_module.instructions.push(new_instr);
             }
         }
-        new_module
+        Ok(new_module)
     }
 }
 
@@ -87,14 +87,14 @@ impl SimpToBrainfuck {
 
 
     
-    fn simp_to_brainfuck(&mut self, instr: &Instruction, target_cell: i32) -> Vec<Instruction> {
+    fn simp_to_brainfuck(&mut self, instr: &Instruction, target_cell: i32) -> Result<Vec<Instruction>, CompileError> {
         let mut new_instrs = Vec::new();
         let opcode = instr.opcode.as_str();
         match opcode {
             simp::op::ASSIGN => {
                 let var_name = match &instr.operands[0] {
                     ir_core::Operand::Value(v) => v.display(),
-                    _ => panic!("Invalid operand for ASSIGN"),
+                    _ => return Err(CompileError::VerifyError(VerifyError::InvalidOperand { position: 0 })),
                 };
                 let temp_cell = self.push_temp();
                 new_instrs.extend(self.clear_cell(temp_cell));
@@ -105,10 +105,10 @@ impl SimpToBrainfuck {
                 let var_index: i32 = self.push_or_get_var(var_name);
                 let value_instr = match &instr.operands[1] {
                     ir_core::Operand::Instruction(i) => i,
-                    _ => panic!("Invalid operand for ASSIGN"),
+                    _ => return Err(CompileError::VerifyError(VerifyError::InvalidOperand { position: 0 })),
                 };
                 // compute the value and store it in the variable's cell
-                new_instrs.extend(self.simp_to_brainfuck(value_instr, temp_cell));
+                new_instrs.extend(self.simp_to_brainfuck(value_instr, temp_cell)?);
                 new_instrs.extend(self.clear_cell(var_index));
                 new_instrs.extend(self.copy_cell(temp_cell, temp_cell2, var_index));
                 self.pop_temp();
@@ -117,17 +117,17 @@ impl SimpToBrainfuck {
             simp::op::CONSTANT => {
                 let value = match &instr.operands[0] {
                     ir_core::Operand::Value(v) => v,
-                    _ => panic!("Invalid operand for CONSTANT"),
+                    _ => return Err(CompileError::VerifyError(VerifyError::InvalidOperand { position: 0 })),
                 };
                 let simp_value = match value.value_type().0 {
                     "int" => {
                         let inner_value = value.as_any().downcast_ref::<simp::SimpValue>().expect("error: unable to parse int value");
                         match inner_value {
                             simp::SimpValue::Int(i) => simp::SimpValue::Int(*i),
-                            _ => panic!("Expected int value"),
+                            _ => return Err(CompileError::VerifyError(VerifyError::InvalidOperand { position: 0 })),
                         }
                     }
-                    _ => panic!("Unsupported value type for CONSTANT"),
+                    _ => return Err(CompileError::VerifyError(VerifyError::InvalidOperand { position: 0 })),
                 };
                 let temp_cell = self.push_temp();
                 new_instrs.extend(self.clear_cell(temp_cell)); // clear temp cell before use
@@ -138,7 +138,7 @@ impl SimpToBrainfuck {
             simp::op::VARIABLE => {
                 let var_name = match &instr.operands[0] {
                     ir_core::Operand::Value(v) => v.display(),
-                    _ => panic!("Invalid operand for VARIABLE"),
+                    _ => return Err(CompileError::VerifyError(VerifyError::InvalidOperand { position: 0 })),
                 };
                 if !self.variables.contains(&var_name.to_string()) {
                     panic!("Undefined variable: {var_name}");
@@ -162,12 +162,12 @@ impl SimpToBrainfuck {
                 let temp_cell1 = self.push_temp();
                 new_instrs.extend(self.clear_cell(temp_cell1)); // clear temp cell before use
 
-                new_instrs.extend(self.simp_to_brainfuck(first_instr, temp_cell1));
+                new_instrs.extend(self.simp_to_brainfuck(first_instr, temp_cell1)?);
 
                 let temp_cell2 = self.push_temp();
                 new_instrs.extend(self.clear_cell(temp_cell2)); // clear temp cell before use
                 
-                new_instrs.extend(self.simp_to_brainfuck(second_instr, temp_cell2));
+                new_instrs.extend(self.simp_to_brainfuck(second_instr, temp_cell2)?);
 
                 let temp_cell3 = self.push_temp();
                 new_instrs.extend(self.clear_cell(temp_cell3)); // clear temp cell before use
@@ -190,7 +190,7 @@ impl SimpToBrainfuck {
                 let temp_cell = self.push_temp();
                 new_instrs.extend(self.clear_cell(temp_cell)); // clear temp cell before use
 
-                new_instrs.extend(self.simp_to_brainfuck(value_instr, temp_cell));
+                new_instrs.extend(self.simp_to_brainfuck(value_instr, temp_cell)?);
                 
                 new_instrs.extend(self.move_from_to(self.center, temp_cell));
                 new_instrs.push(bf::output());
@@ -217,10 +217,10 @@ impl SimpToBrainfuck {
                 new_instrs.extend(self.clear_cell(temp_cell2));
 
 
-                new_instrs.extend(self.simp_to_brainfuck(value_instr, temp_cell));
+                new_instrs.extend(self.simp_to_brainfuck(value_instr, temp_cell)?);
 
                 let mut loop_body = Vec::new();
-                loop_body.extend(self.simp_to_brainfuck(body_instr, temp_cell2));
+                loop_body.extend(self.simp_to_brainfuck(body_instr, temp_cell2)?);
                 
                 loop_body.extend(self.move_from_to(self.center, temp_cell));
                 loop_body.push(bf::decr());
@@ -239,13 +239,13 @@ impl SimpToBrainfuck {
                         ir_core::Operand::Instruction(i) => i,
                         _ => panic!("Invalid operand for BODY"),
                     };
-                    new_instrs.extend(self.simp_to_brainfuck(body_instr, target_cell));
+                    new_instrs.extend(self.simp_to_brainfuck(body_instr, target_cell)?);
                 }
             }
             _ => panic!("Unsupported opcode: {opcode}"),
         }
 
-        new_instrs
+        Ok(new_instrs)
     }
 
     fn move_x_units(&self, x: i32) -> Vec<Instruction> {
@@ -356,7 +356,7 @@ impl SimpToBrainfuck {
         instrs.push(bf::loop_start());
         instrs.push(bf::decr());
         instrs.push(bf::loop_end());
-        
+
         instrs.extend(self.move_from_to(cell, self.center));
         instrs
     }

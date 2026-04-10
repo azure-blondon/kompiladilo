@@ -1,4 +1,5 @@
 use ir_core::{Transformation, Module, Instruction, Operand};
+use ir_core::errors::{CompileError, VerifyError};
 use language_better_brainfuck as bbf;
 
 // # Merge Consecutive Moves or Adds
@@ -16,11 +17,11 @@ impl Transformation for BBFOptMerge {
         &self.name
     }
 
-    fn run(&mut self, module: Module) -> Module {
-        Module {
+    fn run(&mut self, module: Module) -> Result<Module, CompileError> {
+        Ok(Module {
             language: module.language,
-            instructions: self.rewrite_block(module.instructions),
-        }
+            instructions: self.rewrite_block(module.instructions)?,
+        })
     }
 }
 
@@ -32,17 +33,17 @@ impl BBFOptMerge {
             opcode: opcode.to_string(),
         }
     }
-    fn rewrite_block(&self, instrs: Vec<Instruction>) -> Vec<Instruction> {
+    fn rewrite_block(&self, instrs: Vec<Instruction>) -> Result<Vec<Instruction>, CompileError> {
         let mut new_instrs = Vec::new();
 
         let mut current_move: Option<i64> = None;
 
         for instr in instrs {
-            let instr = self.rewrite_instr(instr);
+            let instr = self.rewrite_instr(instr)?;
             match instr.opcode.as_str() {
                 code if code == self.opcode.as_str() => {
                     let Operand::Value(value) = &instr.operands[0] else {
-                        panic!("error: unexpected operand type");
+                        return Err(CompileError::VerifyError(VerifyError::InvalidOperand { position: 0 }));
                     };
                     if let Some(curent_amount) = current_move {
                         current_move = Some(curent_amount + value.as_any().downcast_ref::<bbf::BetterBrainfuckValue>().expect("error: unable to parse move amount").0);
@@ -70,38 +71,38 @@ impl BBFOptMerge {
             });
         }
 
-        new_instrs
+        Ok(new_instrs)
     }
 
-    fn rewrite_instr(&self, mut instr: Instruction) -> Instruction {
+    fn rewrite_instr(&self, mut instr: Instruction) -> Result<Instruction, CompileError> {
         if instr.opcode == bbf::op::LOOP {
             let inner_instrs: Vec<Instruction> = instr.operands.into_iter().map(|op| {
                 match op {
-                    Operand::Instruction(inner) => *inner,
-                    _ => panic!("LOOP should only contain instructions"),
+                    Operand::Instruction(inner) => Ok(*inner),
+                    _ => return Err(CompileError::VerifyError(VerifyError::InvalidOperand { position: 0 })),
                 }
-            }).collect();
+            }).collect::<Result<Vec<Instruction>, CompileError>>()?;
 
-            let rewritten = self.rewrite_block(inner_instrs);
+            let rewritten = self.rewrite_block(inner_instrs)?;
 
             instr.operands = rewritten
                 .into_iter()
                 .map(|i| Operand::Instruction(Box::new(i)))
                 .collect();
 
-            return instr;
+            return Ok(instr);
         }
 
         instr.operands = instr.operands.into_iter().map(|op| {
             match op {
                 Operand::Instruction(inner) => {
-                    Operand::Instruction(Box::new(self.rewrite_instr(*inner)))
+                    Ok(Operand::Instruction(Box::new(self.rewrite_instr(*inner)?)))
                 }
-                v => v,
+                v => Ok(v),
             }
-        }).collect();
+        }).collect::<Result<Vec<Operand>, CompileError>>()?;
 
-        instr
+        Ok(instr)
     }
 
 }

@@ -1,4 +1,5 @@
 use ir_core::{Instruction, Module, Operand, Transformation};
+use ir_core::errors::*;
 use language_better_brainfuck::{self as bbf, BetterBrainfuckValue};
 use language_brainfuck::{self as bf, loop_start};
 
@@ -13,12 +14,12 @@ impl Transformation for BBFToBF {
         "bbf-to-bf"
     }
 
-    fn run(&mut self, module: Module) -> Module {
+    fn run(&mut self, module: Module) -> Result<Module, CompileError> {
         let mut new_module = Module::new(bf::BrainfuckLanguage);
         for instr in module.instructions {
-            self.transform_instruction(&instr, &mut new_module.instructions);
+            self.transform_instruction(&instr, &mut new_module.instructions)?;
         }
-        new_module
+        Ok(new_module)
     }
 }
 
@@ -26,11 +27,11 @@ impl BBFToBF {
     pub fn new() -> Self {
         Self
     }
-    fn transform_instruction(&mut self, instr: &Instruction, instrs: &mut Vec<Instruction>) {
+    fn transform_instruction(&mut self, instr: &Instruction, instrs: &mut Vec<Instruction>) -> Result<(), CompileError> {
         match instr.opcode.as_str() {
             bbf::op::MOVE => {
                 let Some(Operand::Value(value)) = instr.operands.get(0) else {
-                    panic!("error: expected value operand for move instruction");
+                    return Err(CompileError::VerifyError(VerifyError::InvalidOperand { position: 0 }));
                 };
                 let value = value.as_any().downcast_ref::<BetterBrainfuckValue>().expect("error: expected integer value for move instruction").0;
                 if value > 0 {
@@ -45,7 +46,7 @@ impl BBFToBF {
             },
             bbf::op::ADD => {
                 let Some(Operand::Value(value)) = instr.operands.get(0) else {
-                    panic!("error: expected value operand for add instruction");
+                    return Err(CompileError::VerifyError(VerifyError::InvalidOperand { position: 0 }));
                 };
                 let value = value.as_any().downcast_ref::<BetterBrainfuckValue>().expect("error: expected integer value for add instruction").0;
                 if value > 0 {
@@ -62,18 +63,17 @@ impl BBFToBF {
             bbf::op::INPUT => instrs.push(bf::input()),
             bbf::op::LOOP => {
                 let mut body_instrs = Vec::new();
-                instr.operands
-                        .iter()
-                        .for_each(|o| {
-                            if let Operand::Instruction(instr) = o {
-                                self.transform_instruction(&instr, &mut body_instrs);
-                            }
-                        });
+                for o in &instr.operands {
+                    if let Operand::Instruction(instr) = o {
+                        self.transform_instruction(&instr, &mut body_instrs)?;
+                    }
+                }
                 instrs.push(loop_start());
                 instrs.extend(body_instrs);
                 instrs.push(bf::loop_end());
             },
-            _ => panic!("error: unknown opcode {}", instr.opcode),
+            _ => return Err(CompileError::VerifyError(VerifyError::UnknownOpcode(instr.opcode.clone()))),
         }
+        Ok(())
     }
 }

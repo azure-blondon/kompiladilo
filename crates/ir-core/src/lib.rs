@@ -171,7 +171,7 @@ impl Display for Module {
 
 pub trait Transformation {
     fn name(&self) -> &str;
-    fn run(&mut self, module: Module) -> Module;
+    fn run(&mut self, module: Module) -> Result<Module, CompileError>;
 }
 
 // # Pipeline
@@ -191,8 +191,8 @@ impl Pipeline {
         Self { transformations }
     }
 
-    pub fn run(&mut self, module: Module) -> Module {
-        self.transformations.iter_mut().fold(module, |m, t| t.run(m))
+    pub fn run(&mut self, module: Module) -> Result<Module, CompileError> {
+        self.transformations.iter_mut().fold(Ok(module), |result, t| result.and_then(|m| t.run(m)))
     }
 
     pub fn add_transformation(&mut self, transformation: impl Transformation + 'static) {
@@ -237,7 +237,7 @@ impl Compiler {
 
     pub fn compile(&mut self, source: &str) -> Result<String, CompileError> {
         let module = self.parser.parse(source)?;
-        let transformed_module = self.pipeline.run(module);
+        let transformed_module = self.pipeline.run(module)?;
         self.emitter.emit(&transformed_module)
     }
 }

@@ -1,4 +1,4 @@
-use ir_core::{Transformation, Module, Instruction};
+use ir_core::{Instruction, Module, Transformation, errors::{CompileError, ParseError}};
 use language_better_brainfuck as bbf;
 use language_brainfuck as bf;
 
@@ -13,10 +13,11 @@ impl Transformation for BFToBBF {
         "bf-to-bbf"
     }
 
-    fn run(&mut self, module: Module) -> Module {
+    fn run(&mut self, module: Module) -> Result<Module, CompileError> {
         let mut new_module = Module::new(bbf::BetterBrainfuckLanguage);
         
         let mut stack: Vec<(usize, Vec<Instruction>)> = vec![(0, Vec::new())];
+        let mut length = 0;
 
         for (pos, instr) in module.instructions.iter().enumerate() {
             
@@ -37,14 +38,15 @@ impl Transformation for BFToBBF {
                 }
                 _ => panic!("error: unknown opcode {}", instr.opcode),
             }
+            length = pos + 1;
         }
         if stack.len() > 1 {
-            panic!("error: unmatched loop start at position {}", stack.last().unwrap().0);
+            return Err(CompileError::ParseError(ParseError::UnexpectedEof { position: length }));
         }
         let (_, instrs) = stack.pop().unwrap();
         
         new_module.instructions = instrs;
-        new_module
+        Ok(new_module)
     }
 }
 
