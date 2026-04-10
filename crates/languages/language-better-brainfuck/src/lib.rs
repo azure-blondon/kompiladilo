@@ -6,10 +6,12 @@
 
 */
 
+use ir_core::{Instruction, InstructionDefinition, Language, Operand, OperandKind, Value, ValueType};
+
+pub mod emitter;
 
 // # Opcodes
 
-use ir_core::{Instruction, InstructionDefinition, Language, Operand, OperandKind, Value, ValueType};
 
 pub mod op {
     pub const MOVE      : &str = "bbf.move";
