@@ -1,0 +1,13 @@
+[workspace]
+members = [
+    "crates/ir-core",
+    "crates/languages/language-better-brainfuck",
+    "crates/languages/language-brainfuck",
+    "crates/languages/language-simp",
+    "crates/transforms/transform-bbf-bf",
+    "crates/transforms/transform-better-brainfuck-opt",
+    "crates/transforms/transform-bf-bbf",
+    "crates/transforms/transform-simp-brainfuck",
+    "driver",
+]
+resolver = "3"

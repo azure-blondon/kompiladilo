@@ -1,0 +1,15 @@
+[package]
+name = "driver"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ir-core = { path = "../crates/ir-core/" }
+language-brainfuck = { path = "../crates/languages/language-brainfuck/" }
+language-simp = { path = "../crates/languages/language-simp/" }
+language-better-brainfuck = { path = "../crates/languages/language-better-brainfuck/" }
+transform-simp-brainfuck = { path = "../crates/transforms/transform-simp-brainfuck/" }
+transform-bf-bbf = { path = "../crates/transforms/transform-bf-bbf/" }
+transform-bbf-bf = { path = "../crates/transforms/transform-bbf-bf/" }
+transform-better-brainfuck-opt = { path = "../crates/transforms/transform-better-brainfuck-opt/" }
+

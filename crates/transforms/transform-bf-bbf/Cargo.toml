@@ -1,0 +1,9 @@
+[package]
+name = "transform-bf-bbf"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ir-core = { path = "../../ir-core" }
+language-better-brainfuck = { path = "../../languages/language-better-brainfuck" }
+language-brainfuck = { path = "../../languages/language-brainfuck" }

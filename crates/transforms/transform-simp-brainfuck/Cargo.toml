@@ -1,0 +1,9 @@
+[package]
+name = "transform-simp-brainfuck"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ir-core = { path = "../../ir-core" }
+language-simp = { path = "../../languages/language-simp" }
+language-brainfuck = { path = "../../languages/language-brainfuck" }

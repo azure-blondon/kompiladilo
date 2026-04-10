@@ -1,0 +1,8 @@
+[package]
+name = "transform-better-brainfuck-opt"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ir-core = { path = "../../ir-core" }
+language-better-brainfuck = { path = "../../languages/language-better-brainfuck" }
