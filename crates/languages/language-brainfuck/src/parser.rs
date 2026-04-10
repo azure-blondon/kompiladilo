@@ -1,9 +1,18 @@
-use ir_core::errors::ParseError;
-use crate::*;
+use ir_core::{Parser};
+use ir_core::errors::{CompileError, ParseError};
 use ir_core::{Instruction, Module};
 
+use crate::*;
 
-pub fn parse(source: &str) -> Result<Module, ParseError> {
+pub struct BrainfuckParser;
+
+impl Parser for BrainfuckParser {
+    fn parse(&self, source: &str) -> Result<Module, CompileError> {
+        parse(source)
+    }
+}
+
+pub fn parse(source: &str) -> Result<Module, CompileError> {
     let lang = BrainfuckLanguage;
     let mut module = Module::new(BrainfuckLanguage);
     let mut stack: Vec<(usize, Vec<Instruction>)> = vec![(0, Vec::new())];
@@ -36,7 +45,7 @@ pub fn parse(source: &str) -> Result<Module, ParseError> {
     }
 
     if stack.len() > 1 {
-        return Err(ParseError::UnexpectedEof { position: length });
+        return Err(CompileError::ParseError(ParseError::UnexpectedEof { position: length }));
     }
 
     let (_, instructions) = stack.pop().unwrap();

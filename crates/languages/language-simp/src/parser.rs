@@ -1,8 +1,17 @@
 use super::*;
-use ir_core::errors::ParseError;
-use ir_core::{Instruction, Module};
+use ir_core::errors::{CompileError, ParseError};
+use ir_core::{Instruction, Module, Parser};
 
-pub fn parse(source: &str) -> Result<Module, ParseError> {
+
+pub struct SimpParser;
+
+impl Parser for SimpParser {
+    fn parse(&self, source: &str) -> Result<Module, CompileError> {
+        parse(source)
+    }
+}
+
+pub fn parse(source: &str) -> Result<Module, CompileError> {
     let mut tokens = tokenize(source);
     let mut module = Module::new(SimpLanguage);
     module.instructions = parse_program(&mut tokens)?;

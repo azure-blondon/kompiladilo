@@ -1,9 +1,10 @@
-use ir_core::{Language, Module};
+use ir_core::{Language, Module, Emitter};
 use ir_core::errors::ParseError;
 
-use crate::*;
-use emitter::emit;
-use parser::parse;
+use crate::BrainfuckLanguage;
+use crate::{ptr_left, ptr_right, incr, decr, output, r#loop};
+use crate::emitter::BrainfuckEmitter;
+use crate::parser::parse;
 
 #[test]
 fn emit_simple() {
@@ -18,7 +19,7 @@ fn emit_simple() {
         r#loop(loop_body),
         ptr_right(), output(),
     ];
-    assert_eq!(emit(&instrs), Ok("+++[>++<-]>.".into()));
+    assert_eq!(BrainfuckEmitter.emit(&Module { language: Box::from(BrainfuckLanguage), instructions: instrs }), Ok("+++[>++<-]>.".into()));
 }
 
 #[test]
@@ -33,7 +34,7 @@ fn module_roundtrip() {
     let mut module = Module::new(BrainfuckLanguage);
     module.push(incr());
     module.push(output());
-    let result = emit(&module.instructions);
+    let result = BrainfuckEmitter.emit(&Module { language: Box::from(BrainfuckLanguage), instructions: module.instructions });
     assert_eq!(result, Ok("+.".into()));
 }
 
@@ -41,21 +42,21 @@ fn module_roundtrip() {
 fn roundtrip() {
     let source = "+++[>++<-]>.";
     let instructions = parse(source).unwrap().instructions;
-    assert_eq!(emit(&instructions), Ok(source.into()));
+    assert_eq!(BrainfuckEmitter.emit(&Module { language: Box::from(BrainfuckLanguage), instructions }), Ok(source.into()));
 }
 
 #[test]
 fn nested_loops() {
     let source = "[[[]]]";
     let instructions = parse(source).unwrap().instructions;
-    assert_eq!(emit(&instructions), Ok(source.into()));
+    assert_eq!(BrainfuckEmitter.emit(&Module { language: Box::from(BrainfuckLanguage), instructions }), Ok(source.into()));
 }
 
 #[test]
 fn comments_ignored() {
     let source = "this is a comment +++. more comment";
     let instructions = parse(source).unwrap().instructions;
-    assert_eq!(emit(&instructions), Ok("+++.".into()));
+    assert_eq!(BrainfuckEmitter.emit(&Module { language: Box::from(BrainfuckLanguage), instructions }), Ok("+++.".into()));
 }
 
 #[test]
@@ -67,7 +68,7 @@ fn empty() {
 fn unexpected_closing_bracket() {
     assert_eq!(
         parse("]").err(),
-        Some(ParseError::UnexpectedToken { token: "]".to_string(), position: 0 })
+        Some(ParseError::UnexpectedToken { token: "]".to_string(), position: 0 }.into())
     );
 }
 
@@ -75,7 +76,7 @@ fn unexpected_closing_bracket() {
 fn unclosed_opening_bracket() {
     assert_eq!(
         parse("[++").err(),
-        Some(ParseError::UnexpectedEof { position: 3 })
+        Some(ParseError::UnexpectedEof { position: 3 }.into())
     );
 }
 
@@ -83,6 +84,6 @@ fn unclosed_opening_bracket() {
 fn unclosed_reports_first_bracket() {
     assert_eq!(
         parse("[[]").err(),
-        Some(ParseError::UnexpectedEof { position: 3 })
+        Some(ParseError::UnexpectedEof { position: 3 }.into())
     );
 }

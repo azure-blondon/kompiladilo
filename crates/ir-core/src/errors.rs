@@ -1,4 +1,44 @@
+use std::{error::Error, fmt::{Display}};
+
 use crate::{OperandKind};
+
+// # CompileError
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CompileError {
+    VerifyError(VerifyError),
+    ParseError(ParseError),
+}
+
+impl From<VerifyError> for CompileError {
+    fn from(e: VerifyError) -> Self {
+        CompileError::VerifyError(e)
+    }
+}
+
+impl From<ParseError> for CompileError {
+    fn from(e: ParseError) -> Self {
+        CompileError::ParseError(e)
+    }
+}
+
+impl Display for CompileError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CompileError::VerifyError(e) => write!(f, "verification error: {e}"),
+            CompileError::ParseError(e) => write!(f, "parse error: {e}"),
+        }
+    }
+}
+
+impl Error for CompileError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            CompileError::VerifyError(e) => Some(e),
+            CompileError::ParseError(e) => Some(e),
+        }
+    }
+}
 
 // # VerifyError
 

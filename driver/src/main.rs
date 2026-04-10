@@ -6,7 +6,7 @@ use transform_bf_bbf as bf_bbf;
 use transform_bbf_bf as bbf_bf;
 use transform_better_brainfuck_opt as bbf_opt;
 use std::{env, fs};
-use ir_core::{Pipeline};
+use ir_core::{Compiler, Pipeline};
 
 
 
@@ -15,23 +15,30 @@ fn main() {
     let input_path = env::args().nth(1).expect("error: missing input file path");
     let output_path = env::args().nth(2).expect("error: missing output file path");
 
-    compile_simp_to_bf(&input_path, &output_path);
+    compile_simp_to_bf(&input_path, &output_path).expect("error: compilation failed");
 }
 
 
-fn compile_simp_to_bf(input_file: &str, output_file: &str) {
+fn compile_simp_to_bf(input_file: &str, output_file: &str) -> Result<(), Box<dyn std::error::Error>> {
     
-    let mut pipeline = Pipeline::new();
-    pipeline.add_transformation(simp_bf::SimpToBrainfuck::new());
-    pipeline.add_transformation(bf_bbf::BFToBBF::new());
-    pipeline.add_transformation(bbf_opt::BBFOptMerge::new(bbf::op::MOVE));
-    pipeline.add_transformation(bbf_opt::BBFOptMerge::new(bbf::op::ADD));
-    pipeline.add_transformation(bbf_bf::BBFToBF::new());
+    let mut compiler = Compiler::new(
+        simp::parser::SimpParser,
+
+        Pipeline::from_transformations(vec![
+            Box::new(simp_bf::SimpToBrainfuck::new()),
+            Box::new(bf_bbf::BFToBBF::new()),
+            Box::new(bbf_opt::BBFOptMerge::new(bbf::op::MOVE)),
+            Box::new(bbf_opt::BBFOptMerge::new(bbf::op::ADD)),
+            Box::new(bbf_bf::BBFToBF::new()),
+        ]),
+
+        bf::emitter::BrainfuckEmitter,
+    );
 
     let input = fs::read_to_string(input_file).expect("error: unable to read input file");
-    let input = simp::parser::parse(&input).expect("error: unable to parse");
-    let result = pipeline.run(input);
-    let output = bf::emitter::emit(&result.instructions).expect("error: unable to emit output");
+
+    let output = compiler.compile(&input)?;
 
     fs::write(output_file, output).expect("error: unable to write output file");
+    Ok(())
 }

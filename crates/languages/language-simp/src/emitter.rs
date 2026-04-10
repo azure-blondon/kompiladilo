@@ -1,7 +1,15 @@
 use super::*;
-use ir_core::errors::VerifyError;
+use ir_core::{Emitter, Module, errors::{CompileError, VerifyError}};
 
-pub fn emit(instructions: &[Instruction]) -> Result<String, VerifyError> {
+pub struct SimpEmitter;
+
+impl Emitter for SimpEmitter {
+    fn emit(&self, module: &Module) -> Result<String, CompileError> {
+        emit(&module.instructions)
+    }
+}
+
+pub fn emit(instructions: &[Instruction]) -> Result<String, CompileError> {
     let mut output = String::new();
     for instr in instructions {
         output.push_str(&emit_instruction(instr)?);

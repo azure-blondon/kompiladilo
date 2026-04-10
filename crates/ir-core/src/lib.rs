@@ -1,6 +1,6 @@
-use std::fmt::Display;
+use std::{fmt::Display, any::Any};
 
-use crate::errors::VerifyError;
+use crate::errors::{CompileError, VerifyError};
 
 // # Define modules
 pub mod errors;
@@ -11,7 +11,7 @@ pub mod errors;
 pub trait Value: std::fmt::Debug {
     fn value_type(&self) -> ValueType;
     fn display(&self) -> String;
-    fn as_any(&self) -> &dyn std::any::Any;
+    fn as_any(&self) -> &dyn Any;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -186,11 +186,58 @@ impl Pipeline {
             transformations: Vec::new(),
         }
     }
+
+    pub fn from_transformations(transformations: Vec<Box<dyn Transformation>>) -> Self {
+        Self { transformations }
+    }
+
     pub fn run(&mut self, module: Module) -> Module {
         self.transformations.iter_mut().fold(module, |m, t| t.run(m))
     }
 
     pub fn add_transformation(&mut self, transformation: impl Transformation + 'static) {
         self.transformations.push(Box::new(transformation));
+    }
+}
+
+// # Parser
+
+pub trait Parser {
+    fn parse(&self, source: &str) -> Result<Module, CompileError>;
+}
+
+
+// # Emitter
+
+pub trait Emitter {
+    fn emit(&self, module: &Module) -> Result<String, CompileError>;
+}
+
+// # Compiler
+
+pub struct Compiler {
+    pub parser: Box<dyn Parser>,
+    pub pipeline: Pipeline,
+    pub emitter: Box<dyn Emitter>,
+}
+
+impl Compiler {
+    pub fn new(
+        parser: impl Parser + 'static,
+        pipeline: Pipeline,
+        emitter: impl Emitter + 'static,
+    
+    ) -> Self {
+        Self {
+            parser: Box::new(parser),
+            pipeline,
+            emitter: Box::new(emitter),
+        }
+    }
+
+    pub fn compile(&mut self, source: &str) -> Result<String, CompileError> {
+        let module = self.parser.parse(source)?;
+        let transformed_module = self.pipeline.run(module);
+        self.emitter.emit(&transformed_module)
     }
 }
