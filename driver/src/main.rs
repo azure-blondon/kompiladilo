@@ -15,13 +15,7 @@ fn main() {
     let input_path = env::args().nth(1).expect("error: missing input file path");
     let output_path = env::args().nth(2).expect("error: missing output file path");
 
-    compile_simp_to_bf(&input_path, &output_path).expect("error: compilation failed");
-}
-
-
-fn compile_simp_to_bf(input_file: &str, output_file: &str) -> Result<(), Box<dyn std::error::Error>> {
-    
-    let mut compiler = Compiler::new(
+    let compiler = Compiler::new(
         simp::parser::SimpParser,
 
         Pipeline::from_transformations(vec![
@@ -34,6 +28,12 @@ fn compile_simp_to_bf(input_file: &str, output_file: &str) -> Result<(), Box<dyn
 
         bf::emitter::BrainfuckEmitter,
     );
+
+    compile_file_to_file(&input_path, &output_path, compiler).expect("error: compilation failed");
+}
+
+
+fn compile_file_to_file(input_file: &str, output_file: &str, mut compiler: Compiler) -> Result<(), Box<dyn std::error::Error>> {
 
     let input = fs::read_to_string(input_file).expect("error: unable to read input file");
 
