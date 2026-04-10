@@ -13,14 +13,12 @@ pub fn emit(instructions: &[Instruction]) -> Result<String, VerifyError> {
             op::OUTPUT    => out.push('.'),
             op::INPUT     => out.push(','),
             op::LOOP => {
-                let body = expect_instruction(&instr.operands[0])?;
                 out.push('[');
-                for operand in &body.operands {
+                for operand in &instr.operands {
                     out.push_str(&emit(std::slice::from_ref(expect_instruction(operand)?))?);
                 }
                 out.push(']');
             }
-            op::BODY => return Err(VerifyError::InvalidOperand { position: 0 }),
             _  => {},
         }
     }

@@ -16,8 +16,7 @@ pub mod op {
     pub const ADD       : &str = "bbf.add";
     pub const OUTPUT    : &str = "bbf.output";
     pub const INPUT     : &str = "bbf.input";
-    pub const LOOP      : &str = "bbf.loop";
-    pub const BODY      : &str = "bbf.body"; // variadic: child instructions
+    pub const LOOP      : &str = "bbf.loop"; // variadic: child instructions
 }
 
 // # Values
@@ -67,10 +66,6 @@ impl Language for BetterBrainfuckLanguage {
             },
             InstructionDefinition {
                 opcode: op::LOOP,
-                operands: Some(&[OperandKind::Instruction]),
-            },
-            InstructionDefinition {
-                opcode: op::BODY,
                 operands: None, // variable number of instructions
             },
         ]
@@ -96,12 +91,6 @@ pub fn input() -> Instruction {
 }
 
 pub fn r#loop(instructions: Vec<Instruction>) -> Instruction {
-    Instruction::new(op::LOOP, vec![Operand::Instruction(Box::new(body(instructions)))])
+    Instruction::new(op::LOOP, instructions.into_iter().map(|i| Operand::Instruction(Box::new(i))).collect())
 }
 
-pub fn body(instructions: Vec<Instruction>) -> Instruction {
-    Instruction::new(
-        op::BODY,
-        instructions.into_iter().map(|i| Operand::Instruction(Box::new(i))).collect(),
-    )
-}

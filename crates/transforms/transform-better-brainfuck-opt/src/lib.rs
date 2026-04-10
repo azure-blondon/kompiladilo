@@ -74,11 +74,11 @@ impl BBFOptMerge {
     }
 
     fn rewrite_instr(&self, mut instr: Instruction) -> Instruction {
-        if instr.opcode == bbf::op::BODY {
+        if instr.opcode == bbf::op::LOOP {
             let inner_instrs: Vec<Instruction> = instr.operands.into_iter().map(|op| {
                 match op {
                     Operand::Instruction(inner) => *inner,
-                    _ => panic!("BODY should only contain instructions"),
+                    _ => panic!("LOOP should only contain instructions"),
                 }
             }).collect();
 

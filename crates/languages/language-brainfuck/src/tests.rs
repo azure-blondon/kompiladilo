@@ -29,32 +29,6 @@ fn verify_valid() {
 }
 
 #[test]
-fn verify_loop_wrong_operand() {
-    use ir_core::{ValueType, errors::VerifyError};
-
-    struct DummyVal;
-    impl std::fmt::Debug for DummyVal {
-        fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-            write!(f, "DummyVal")
-        }
-    }
-    impl ir_core::Value for DummyVal {
-        fn value_type(&self) -> ValueType { ValueType("dummy") }
-        fn display(&self) -> String { "dummy".into() }
-        fn as_any(&self) -> &dyn std::any::Any {
-            self
-        }
-    }
-
-    let lang = BrainfuckLanguage;
-    let bad = Instruction::new(op::LOOP, vec![Operand::Value(Box::new(DummyVal))]);
-    assert!(matches!(
-        lang.verify(&bad),
-        Err(VerifyError::OperandTypeMismatch { position: 0, .. })
-    ));
-}
-
-#[test]
 fn module_roundtrip() {
     let mut module = Module::new(BrainfuckLanguage);
     module.push(incr());

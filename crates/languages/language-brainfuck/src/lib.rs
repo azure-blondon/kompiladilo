@@ -9,7 +9,7 @@
 
 
 
-use ir_core::{Language, Instruction, InstructionDefinition, Operand, OperandKind};
+use ir_core::{Language, Instruction, InstructionDefinition, Operand};
 
 #[cfg(test)]
 pub mod tests;
@@ -26,8 +26,7 @@ pub mod op {
     pub const DECR      : &str = "bf.decr";
     pub const OUTPUT    : &str = "bf.output";
     pub const INPUT     : &str = "bf.input";
-    pub const LOOP      : &str = "bf.loop";
-    pub const BODY      : &str = "bf.body";  // variadic: child instructions
+    pub const LOOP      : &str = "bf.loop"; // variadic: child instructions
 }
 
 
@@ -48,10 +47,6 @@ impl Language for BrainfuckLanguage {
             InstructionDefinition { opcode: op::INPUT,     operands: Some(&[]) },
             InstructionDefinition {
                 opcode: op::LOOP,
-                operands: Some(&[OperandKind::Instruction]),
-            },
-            InstructionDefinition {
-                opcode: op::BODY,
                 operands: None, // variable number of instructions
             },
         ]
@@ -68,13 +63,7 @@ pub fn decr()      -> Instruction { Instruction::leaf(op::DECR)      }
 pub fn output()    -> Instruction { Instruction::leaf(op::OUTPUT)    }
 pub fn input()     -> Instruction { Instruction::leaf(op::INPUT)     }
 
-pub fn body(instructions: Vec<Instruction>) -> Instruction {
-    Instruction::new(
-        op::BODY,
-        instructions.into_iter().map(|i| Operand::Instruction(Box::new(i))).collect(),
-    )
-}
 
 pub fn r#loop(instructions: Vec<Instruction>) -> Instruction {
-    Instruction::new(op::LOOP, vec![Operand::Instruction(Box::new(body(instructions)))])
+    Instruction::new(op::LOOP, instructions.into_iter().map(|i| Operand::Instruction(Box::new(i))).collect())
 }

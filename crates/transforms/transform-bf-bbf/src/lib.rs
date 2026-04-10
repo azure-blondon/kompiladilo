@@ -36,19 +36,15 @@ impl BFToBBF {
             bf::op::OUTPUT => instrs.push(bbf::output()),
             bf::op::INPUT => instrs.push(bbf::input()),
             bf::op::LOOP => {
-                let body = instr.operands.get(0).expect("error: expected body in loop");
                 let mut body_instrs: Vec<Instruction> = Vec::new();
-                if let Operand::Instruction(body_instr) = body {
-                    body_instr.operands
-                            .iter()
-                            .for_each(|o| {
-                                if let Operand::Instruction(instr) = o {
-                                    self.transform_instruction(&instr, &mut body_instrs);
-                                }
-                            });
-                } else {
-                    panic!("error: expected instruction operand in loop body");
-                }
+                instr.operands
+                        .iter()
+                        .for_each(|o| {
+                            if let Operand::Instruction(instr) = o {
+                                self.transform_instruction(&instr, &mut body_instrs);
+                            }
+                        });
+               
 
                 instrs.push(bbf::r#loop(body_instrs));
             },
