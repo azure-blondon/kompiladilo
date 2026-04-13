@@ -10,7 +10,7 @@ The structure is designed to be generic and modular to take many Languages into 
 
 ## But what is a Language?
 
-It is a name and a set of possible Instructions.
+We define a Language to be a name and a set of possible Instructions.
 
 This encompasses high-level languages, intermediate representations, low-level assembly languages, etc...
 
@@ -34,3 +34,8 @@ Some Tranformations are not between Modules, but between Modules and some other 
 For these cases, it's possible to define Parsers and Emitters for any Language.
 
 (for now, only String input and ouput are supported)
+
+
+# What is currently implemented
+
+![](/resources/implemented_languages_transformations.drawio.png)
